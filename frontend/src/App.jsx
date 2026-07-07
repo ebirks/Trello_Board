@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
+import BoardDetail from './BoardDetail'
 
 function App() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [token, setToken] = useState(localStorage.getItem('token') || '')
+
+  const [selectedBoardId, setSelectedBoardId] = useState(null)
 
   const [boards, setBoards] = useState([])
   const [newBoardTitle, setNewBoardTitle] = useState('')
@@ -62,6 +65,10 @@ function App() {
     setBoards([])
   }
 
+if (selectedBoardId) {
+  return <BoardDetail boardId={selectedBoardId} token={token} goBack={() => setSelectedBoardId(null)} />
+}
+
   if (token) {
     return (
       <div style={{ padding: '20px' }}>
@@ -87,9 +94,9 @@ function App() {
         {/* Display Boards */}
         <div style={{ display: 'flex', gap: '20px' }}>
           {boards.map(board => (
-            <div key={board.id} style={{ border: '1px solid black', padding: '20px', width: '200px' }}>
-              <h4>{board.title}</h4>
-              <p>{board.description || 'No description'}</p>
+            <div key={board.id} style={{ border: '1px solid black', padding: '20px', width: '200px', cursor: 'pointer' }} onClick={() => setSelectedBoardId(board.id)}>
+                <h4>{board.title}</h4>
+                <p>{board.description || 'No description'}</p>
             </div>
           ))}
         </div>
@@ -100,7 +107,7 @@ function App() {
   // If not logged in, show the Login Form
   return (
     <div style={{ padding: '20px' }}>
-      <h2>Login to Trello Clone</h2>
+      <h2>Login to Cardify</h2>
       <form onSubmit={handleLogin}>
         <input
           type="text"

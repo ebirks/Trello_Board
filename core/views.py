@@ -25,7 +25,15 @@ class ColumnViewSet(viewsets.ModelViewSet):
     serializer_class = ColumnSerializer
     permission_classes = [IsAuthenticated]
 
+    def get_queryset(self):
+        # Only return columns for boards owned by the logged-in user
+        return Column.objects.filter(board__owner=self.request.user)
+
 class CardsViewSet(viewsets.ModelViewSet):
     queryset = Cards.objects.all()
     serializer_class = CardsSerializer
     permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        # Only return cards for boards owned by the logged-in user
+        return Cards.objects.filter(column__board__owner=self.request.user)
