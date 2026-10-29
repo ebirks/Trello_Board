@@ -3,8 +3,26 @@ from rest_framework.permissions import IsAuthenticated
 from django.db import models
 from .models import Board, Column, Cards
 from .serializers import BoardSerializer, ColumnSerializer, CardsSerializer
-from .permissions import IsBoardMemberOrReadOnly  # <-- MUST BE HERE
+from .permissions import IsBoardMemberOrReadOnly
+from channels.layers import get_channel_layer
+from asgiref.sync import async_to_sync
+import json
 
+def broadcast_board_update(board_id, action, data):
+    """
+    Sends a message to all WebSocket clients listening to this board.
+    """
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        f'board_{board_id}',
+        {
+            'type': 'board_update',
+            'message': {
+                'action': action,
+                'data': data
+            }
+        }
+    )
 
 class BoardViewSet(viewsets.ModelViewSet):
     queryset = Board.objects.all()
@@ -29,11 +47,22 @@ class ColumnViewSet(viewsets.ModelViewSet):
         # Only return columns for boards owned by the logged-in user
         return Column.objects.filter(board__owner=self.request.user)
 
-class CardsViewSet(viewsets.ModelViewSet):
+
+class CardViewSet(viewsets.ModelViewSet):
     queryset = Cards.objects.all()
     serializer_class = CardsSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        # Only return cards for boards owned by the logged-in user
         return Cards.objects.filter(column__board__owner=self.request.user)
+
+    def perform_create(self, serializer):
+        # Save the card to the database
+        card = serializer.save()
+
+        # Broadcast to everyone looking at this board!
+        broadcast_board_update(
+            board_id=card.column.board.id,
+            action='card_created',
+            data=(card).data
+        )

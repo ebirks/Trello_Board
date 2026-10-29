@@ -35,6 +35,30 @@ function BoardDetail({ boardId, token, goBack }) {
     fetchCards()
   }, [boardId])
 
+  // WebSocket Connection for Real-Time Updates
+  useEffect(() => {
+    // Connect to the Django WebSocket URL (ws:// instead of http://)
+    // We pass the boardId in the URL so we join the correct "room"
+    const socket = new WebSocket(`ws://127.0.0.1:8000/ws/board/${boardId}/`)
+
+    // When the socket receives a message from Django
+    socket.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+
+      // If Django tells us a card or column was created, refresh the data!
+      if (data.message.action === 'card_created') {
+        fetchCards()
+      } else if (data.message.action === 'column_created') {
+        fetchColumns()
+      }
+    }
+
+    // When the component unmounts (user clicks "Back to Boards"), close the socket
+    return () => {
+      socket.close()
+    }
+  }, [boardId]) // Reconnect if the boardId changes
+
   const handleAddColumn = async (e) => {
     e.preventDefault()
     try {
