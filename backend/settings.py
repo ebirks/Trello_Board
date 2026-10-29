@@ -130,3 +130,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 ASGI_APPLICATION = 'backend.asgi.application'
+
+# Channels configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
